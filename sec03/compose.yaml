@@ -3,3 +3,5 @@ services:
     image: fluent/fluentd:v1.15.1-1.0
     volumes:
       - ./fluent.conf:/fluentd/etc/fluent.conf
+    ports:
+      - 24226:24226

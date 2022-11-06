@@ -1,0 +1,60 @@
+system:
+  process_name: "Data collector"
+  workers: 8
+  root_dir: /fluentd
+  log_level: debug
+  suppress_config_dump: false
+  rpc_endpint: 0.0.0.0:24226
+  enable_ge_dump: true
+
+  log:
+    format: json
+    time_format: '%Y-%m-%d %H:%M:%S %z'
+    rotate_age: 10
+    rotate_size: 100k
+
+config:
+  - source:
+      $type: forward
+      $id: input1
+      $label: '@mainstream'
+      port: 24224
+
+  # トップレベルのフィルタで**を指定すると fluent.** にも該当する。この書式は非推奨なので以下のように @FLUENT_LOGのlabelとして処理する
+  # - filter:
+  #     $tag: '**'
+  #     $type: stdout
+
+  - label:
+      $name: '@FLUENT_LOG'
+      config:
+        - match:
+            $tag: '**'
+            $type: stdout
+
+  - label:
+      $name: '@mainstream'
+      config:
+        - match:
+            $tag: docker.**
+            $type: file
+            $id: output_docker1
+            path: /fluentd/log/docker.*.log
+            symlink_path: /fluentd/log/docker.log
+            append: true
+            time_slice_format: '%Y%m%d'
+            time_slice_wait: 1m
+            time_format: '%Y%m%dT%H%M%S%z'
+            time_key: timestamp
+
+        - match:
+            $tag: '**'
+            $type: file
+            $id: output1
+            path: /fluentd/log/data.*.log
+            symlink_path: /fluentd/log/data.log
+            append: true
+            time_slice_format: '%Y%m%d'
+            time_slice_wait: 10m
+            time_format: '%Y%m%dT%H%M%S%z'
+            time_key: timestamp
